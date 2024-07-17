@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String    @id @default(uuid()) @db.Uuid
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  disabled  DateTime?
+  name      String
+  waNumber  String? // número do whatsapp
+  waId      String? // id do whatsapp
+
+  Business   Business @relation(fields: [businessId], references: [id])
+  businessId String   @db.Uuid
+
+  @@map("customers")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  disabled     DateTime?
+  name         String
+  email        String    @unique
+  passwordHash String
+
+  Business   Business @relation(fields: [businessId], references: [id])
+  businessId String   @db.Uuid
+
+  @@map("users")
+}
+
+model Business {
+  id            String    @id @default(uuid()) @db.Uuid
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  disabled      DateTime?
+  corporateName String    @unique
+  tradingName   String
+  cnpj          String    @unique
+
+  MetaApp   MetaApp @relation(fields: [metaAppId], references: [id])
+  metaAppId String  @unique @db.Uuid
+
+  OpenAIApp   OpenAIApp @relation(fields: [openAIAppId], references: [id])
+  openAIAppId String    @unique @db.Uuid
+
+  Customers Customer[]
+  Users     User[]
+
+  @@map("business")
+}
+
+model OpenAIApp {
+  id        String  @id @default(uuid()) @db.Uuid
+  secretKey String? @unique
+
+  Business Business?
+
+  @@map("openai_app")
+}
+
+model MetaApp {
+  id    String  @id @default(uuid()) @db.Uuid
+  appId String? @unique
+
+  Business Business?
+
+  MetaWhatsapp MetaWhatsapp[]
+
+  @@map("meta_app")
+}
+
+model MetaWhatsapp {
+  id              String @id @default(uuid()) @db.Uuid
+  version         String @default("v19.0")
+  waToken         String
+  waPhoneNumber   String @unique
+  waPhoneNumberId String @unique
+  waBusinessId    String @unique
+  waVersion       String @unique
+
+  MetaApp   MetaApp @relation(fields: [metaAppId], references: [id])
+  metaAppId String  @db.Uuid
+
+  @@map("meta_whatsapp")
+}
+
+enum MessageType {
+  text
+  image
+  interactive
+  document
+  audio
+  sticker
+  order
+  video
+  button
+  contacts
+  location
+  unknown
+  system
+  reaction
+  unsupported
+
+  @@map("message_type")
+}
+
+model Message {
+  id        String      @id @default(uuid()) @db.Uuid
+  createdAt DateTime    @default(now())
+  type      MessageType
+  text      String?
+  media     String?
+
+  @@map("messages")
+}
